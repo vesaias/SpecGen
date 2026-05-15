@@ -1,0 +1,37 @@
+{
+  "name": "@specgen/server",
+  "version": "0.0.1",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "dev": "tsx watch src/serve.ts"
+  },
+  "dependencies": {
+    "@specgen/connector-confluence": "workspace:*",
+    "@specgen/connector-git-docs": "workspace:*",
+    "@specgen/core": "workspace:*",
+    "@specgen/parser-dotnet": "workspace:*",
+    "@specgen/parser-frontend-capture": "workspace:*",
+    "@specgen/parser-llm": "workspace:*",
+    "@specgen/parser-python": "workspace:*",
+    "@specgen/parser-react": "workspace:*",
+    "express": "^4.21.0",
+    "octokit": "^5.0.5",
+    "p-queue": "^9.2.0",
+    "puppeteer-core": "^24.43.1",
+    "ulid": "^2.3.0"
+  },
+  "devDependencies": {
+    "@puppeteer/browsers": "^2.13.2",
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.0.0",
+    "@types/supertest": "^6.0.2",
+    "supertest": "^7.0.0",
+    "tsup": "^8.3.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}

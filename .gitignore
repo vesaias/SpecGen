@@ -1,0 +1,36 @@
+# Environment
+.env
+
+# Node
+node_modules/
+dist/
+.vite/
+
+# .NET
+bin/
+obj/
+*.user
+*.suo
+
+# IDE
+.vs/
+.vscode/
+.idea/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Internal research/scratch dirs (not part of OSS source)
+research/
+example/
+targets/
+workspaces/
+old prompts/
+old code/
+
+# Operator-only profile (kept locally, never shipped to git or the Docker image)
+packages/core/profiles/pm-old/
+
+# Generated specgen output + internal planning docs (kept locally, not shipped)
+docs/

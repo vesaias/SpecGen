@@ -1,0 +1,55 @@
+# Production-ready SpecGen single-container stack.
+#
+#   docker compose up -d                 # build + start, daemonised
+#   docker compose logs -f specgen       # follow logs
+#   docker compose down                  # stop (volumes persist)
+#
+# Dev workflow lives in docker-compose.dev.yml (Vite + tsx watch).
+#
+# To mount your local project codebases for parsing, point WORKSPACES_HOST_DIR
+# at a directory on the host (e.g. /home/me/code). Inside SpecGen, set each
+# project's source.localPath to /workspaces/<your-project-name>.
+services:
+  specgen:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: specgen:latest
+    container_name: specgen
+    restart: unless-stopped
+    ports:
+      # Bind 127.0.0.1 by default so the unauthenticated API is not exposed
+      # to the LAN. Operators publishing to a public network should add auth
+      # in front (reverse proxy with basic-auth, Tailscale, etc.).
+      # Override the host port via SPECGEN_HOST_PORT (default 6101).
+      - "127.0.0.1:${SPECGEN_HOST_PORT:-6101}:6101"
+    # Allow the frontend-capture Playwright runner to reach a dev server
+    # running on the host (e.g. http://host.docker.internal:3000). On macOS /
+    # Windows Docker Desktop this maps automatically; on Linux we need the
+    # explicit host-gateway alias.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - specgen-data:/data
+      - ${WORKSPACES_HOST_DIR:-./workspaces}:/workspaces
+    environment:
+      # Keys are optional. Leave blank to fall back to the local stub provider.
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      # Subscription-billed Claude Code (uses your Claude Pro/Max). The CLI is
+      # pre-installed in the image; this token enables the `claude_code` provider.
+      CLAUDE_CODE_OAUTH_TOKEN: ${CLAUDE_CODE_OAUTH_TOKEN:-}
+      # Master key for the encrypted token store. Leave blank to auto-generate
+      # at /data/secret.key on first boot (back it up alongside the DB).
+      SPECGEN_SECRET_KEY: ${SPECGEN_SECRET_KEY:-}
+      # Override defaults inside the container if needed
+      SPECGEN_BIND_PORT: "6101"
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--spider", "http://127.0.0.1:6101/api/projects"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  specgen-data:

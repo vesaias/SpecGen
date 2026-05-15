@@ -1,0 +1,61 @@
+/*
+ * print.css — applied when usePrintMode() detects `?print=1`. Strips the
+ * SpecGen chrome (sidebar, header, edit toggles, action buttons) so Puppeteer
+ * captures just the content. Also adds `@media print` page-break rules so the
+ * Puppeteer-emitted PDF lays out sensibly.
+ *
+ * Phase D fast-follow v0.2, Task F.2.
+ */
+
+/* Strip chrome whenever body.print is set (driven by usePrintMode). */
+body.print nav,
+body.print [data-print-hide] {
+  display: none !important;
+}
+
+/* The main content sits offset by the sidebar width in normal mode. In print
+ * mode the sidebar is gone, so the offset has to go too. */
+body.print main {
+  margin-left: 0 !important;
+}
+
+body.print {
+  background: white;
+}
+
+/* Force-expand collapsibles so all the content shows up in the PDF. */
+body.print details {
+  display: block !important;
+}
+body.print details > summary {
+  display: none !important;
+}
+body.print details > *:not(summary) {
+  display: block !important;
+}
+
+/* @media print rules: page-break behaviour Puppeteer respects. */
+@media print {
+  h1,
+  h2,
+  h3 {
+    break-after: avoid;
+  }
+  pre,
+  .code-block {
+    break-inside: avoid;
+    white-space: pre-wrap;
+  }
+  table {
+    break-inside: auto;
+  }
+  tr {
+    break-inside: avoid;
+  }
+  img {
+    max-width: 100%;
+  }
+  .response-example {
+    break-inside: avoid;
+  }
+}

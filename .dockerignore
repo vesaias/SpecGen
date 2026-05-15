@@ -1,0 +1,51 @@
+# Version control
+.git
+.gitignore
+.gitattributes
+
+# Node / pnpm
+node_modules
+**/node_modules
+**/dist
+**/.vite
+.pnpm-store
+
+# Editor / IDE
+.vscode
+.idea
+.vs
+*.swp
+*.user
+*.suo
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Local config + secrets (never bake into image)
+.env
+.env.*
+!.env.example
+
+# Tests, fixtures, docs not needed inside the runtime image
+**/tests
+**/__tests__
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/vitest.config.*
+docs
+research
+targets
+example
+
+# Sibling test target
+MockPMS
+
+# Operator-only profile (kept in-repo for local use, never shipped in the image)
+packages/core/profiles/pm-old
+
+# Misc
+*.log
+*.docx
+*.pdf

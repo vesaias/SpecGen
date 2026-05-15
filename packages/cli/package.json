@@ -1,0 +1,31 @@
+{
+  "name": "@specgen/cli",
+  "version": "0.0.1",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "specgen": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts --sourcemap",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@specgen/core": "workspace:*",
+    "@specgen/parser-dotnet": "workspace:*",
+    "@specgen/parser-frontend-capture": "workspace:*",
+    "@specgen/parser-python": "workspace:*",
+    "@specgen/parser-react": "workspace:*",
+    "@specgen/server": "workspace:*",
+    "express": "^4.21.0",
+    "yaml": "^2.6.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.0.0",
+    "tsup": "^8.3.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}

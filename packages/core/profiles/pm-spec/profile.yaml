@@ -1,0 +1,32 @@
+schemaVersion: 1
+id: pm-spec
+name: PM-Facing Specification
+description: Business-readable specifications for product managers and business analysts.
+version: 1.0.0
+extends: null
+audience: [pm, ba]
+supports_generators:
+  - full-tree-spec
+  - single-page-spec
+supports_item_types:
+  - backend-endpoint
+  - frontend-page
+  - domain-event
+  - handler
+ai:
+  default_model: claude-haiku-4-5
+  default_temperature: 0.2
+  default_max_tokens: 8000
+  default_concurrency: 3
+output:
+  language: en
+  block_types_allowlist:
+    - richtext
+    - table
+    - code
+    - response
+    - callout
+    - image
+keywords: [pm, business, structured-spec, api-documentation]
+author: SpecGen
+license: MIT

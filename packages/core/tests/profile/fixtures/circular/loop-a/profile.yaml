@@ -1,0 +1,7 @@
+schemaVersion: 1
+id: loop-a
+name: Loop A
+version: 1.0.0
+extends: loop-b
+supports_generators: [g]
+supports_item_types: [x]

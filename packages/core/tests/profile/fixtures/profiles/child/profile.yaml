@@ -1,0 +1,7 @@
+schemaVersion: 1
+id: child
+name: Child
+version: 1.0.0
+extends: base
+supports_generators: [g]
+supports_item_types: [x]

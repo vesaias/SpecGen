@@ -1,0 +1,37 @@
+{
+  "name": "@specgen/core",
+  "version": "0.0.1",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts --sourcemap",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.95.1",
+    "@octokit/plugin-retry": "^8.1.0",
+    "@octokit/plugin-throttling": "^11.0.3",
+    "archiver": "^8.0.0",
+    "octokit": "^5.0.5",
+    "openai": "^6.37.0",
+    "p-queue": "^9.2.0",
+    "yaml": "^2.6.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@specgen/parser-frontend-capture": "workspace:*",
+    "@types/archiver": "^7.0.0",
+    "@types/node": "^25.6.2",
+    "tsup": "^8.3.0",
+    "typescript": "^5.7.0"
+  },
+  "peerDependencies": {
+    "@specgen/parser-frontend-capture": "workspace:*"
+  },
+  "peerDependenciesMeta": {
+    "@specgen/parser-frontend-capture": {
+      "optional": true
+    }
+  }
+}

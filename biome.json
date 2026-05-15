@@ -1,0 +1,71 @@
+{
+  "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
+  "organizeImports": { "enabled": true },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "style": {
+        "noNonNullAssertion": "off",
+        "useNamingConvention": "off"
+      },
+      "suspicious": {
+        "noArrayIndexKey": "off",
+        "noAssignInExpressions": "off",
+        "noExplicitAny": "off"
+      },
+      "complexity": {
+        "noForEach": "off"
+      },
+      "a11y": {
+        "useSemanticElements": "off"
+      }
+    }
+  },
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineWidth": 100
+  },
+  "files": {
+    "ignore": [
+      "**/node_modules",
+      "**/dist",
+      "**/build",
+      "data/**",
+      "targets/**",
+      "workspaces/**",
+      "docs/**",
+      "backend/**",
+      "example/**",
+      "existing/**",
+      "research/**",
+      "old code/**",
+      "old prompts/**",
+      "packages/webapp/src/index.css",
+      "packages/webapp/postcss.config.js",
+      "packages/webapp/tailwind.config.js"
+    ]
+  },
+  "overrides": [
+    {
+      "include": [
+        "packages/parser-dotnet/src/parseBackend.ts",
+        "packages/parser-react/src/parseFrontend.ts"
+      ],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noAssignInExpressions": "off",
+            "noImplicitAnyLet": "off"
+          },
+          "style": {
+            "noNonNullAssertion": "off",
+            "useNodejsImportProtocol": "off"
+          }
+        }
+      }
+    }
+  ]
+}

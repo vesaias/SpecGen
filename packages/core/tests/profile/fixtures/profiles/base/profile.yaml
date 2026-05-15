@@ -1,0 +1,6 @@
+schemaVersion: 1
+id: base
+name: Base
+version: 1.0.0
+supports_generators: [g]
+supports_item_types: [x]

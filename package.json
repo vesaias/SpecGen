@@ -1,0 +1,23 @@
+{
+  "name": "specgen",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Profile-based AI documentation platform.",
+  "engines": { "node": ">=22" },
+  "packageManager": "pnpm@9.12.0",
+  "scripts": {
+    "build": "pnpm -r --filter './packages/*' build",
+    "dev": "concurrently --names server,webapp --kill-others-on-fail \"pnpm --filter @specgen/server dev\" \"pnpm --filter @specgen/webapp dev\"",
+    "test": "vitest --run",
+    "test:watch": "vitest",
+    "typecheck": "pnpm -r --filter './packages/*' typecheck",
+    "lint": "biome check .",
+    "format": "biome format --write ."
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "concurrently": "^9.0.0",
+    "vitest": "^2.1.0",
+    "typescript": "^5.7.0"
+  }
+}

@@ -1,0 +1,31 @@
+schemaVersion: 1
+id: dev-api-reference
+name: Developer API Reference
+description: Type-precise, code-forward API documentation for developers integrating with the API.
+version: 1.0.0
+extends: null
+audience: [developers, integrators]
+supports_generators:
+  - full-tree-spec
+  - single-page-spec
+supports_item_types:
+  - backend-endpoint
+  - frontend-page
+  - domain-event
+  - handler
+ai:
+  default_model: claude-haiku-4-5
+  default_temperature: 0.15
+  default_max_tokens: 8000
+  default_concurrency: 3
+output:
+  language: en
+  block_types_allowlist:
+    - richtext
+    - table
+    - code
+    - response
+    - callout
+keywords: [developer, api, reference, technical]
+author: SpecGen
+license: MIT

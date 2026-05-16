@@ -17,6 +17,7 @@ import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import PQueue from "p-queue";
 import { renderPrompt } from "../../ai/PromptRenderer.js";
+import { mergeAiEnrichment } from "../../ai/mergeAiEnrichment.js";
 import { canonicalItemType, schemaForItemType } from "../../ai/outputSchema.js";
 import { calcCost } from "../../ai/pricing.js";
 import { safeParseJson } from "../../ai/safeParseJson.js";
@@ -645,6 +646,7 @@ async function* run(ctx: GeneratorContext): AsyncIterable<GeneratorEvent> {
             model,
             temperature,
             maxTokens,
+            signal: ctx.signal,
           });
           usage = result.usage;
           const durationMs = Date.now() - t0;
@@ -723,10 +725,10 @@ async function* run(ctx: GeneratorContext): AsyncIterable<GeneratorEvent> {
               eventBuffer.push({ type: "warning", message: msg });
               return;
             }
-            Object.assign(itemRec, validated.data as Record<string, unknown>);
+            mergeAiEnrichment(itemRec, validated.data as Record<string, unknown>);
           } else {
             // Unknown item type — accept the raw object (forward-compat)
-            Object.assign(itemRec, parsed as Record<string, unknown>);
+            mergeAiEnrichment(itemRec, parsed as Record<string, unknown>);
           }
 
           // Mark the enrichment as fresh against the current source. Drift

@@ -38,6 +38,7 @@ export class OllamaClient implements AiClient {
           temperature: input.temperature,
         },
       }),
+      signal: input.signal,
     });
 
     if (!res.ok) {

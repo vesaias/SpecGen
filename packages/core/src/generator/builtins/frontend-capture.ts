@@ -36,6 +36,14 @@ export interface FrontendCaptureOpts {
     maxItems?: number;
     timeoutPerPageSec?: number;
     executablePath?: string;
+    /**
+     * Cookies applied to every per-page context regardless of `auth.type`.
+     * Use when a SPA needs a primary auth (e.g. localStorage api_key) AND
+     * a server-issued session cookie. Threaded through to captureFrontend's
+     * `extraCookies` — the server's POST /capture endpoint reads it from
+     * `connectors.capture.extraCookies` on the project.
+     */
+    extraCookies?: Array<{ name: string; value: string; domain?: string; path?: string }>;
   };
   outputDir: string;
   itemIds?: string[];
@@ -139,6 +147,7 @@ export const frontendCaptureGenerator: GeneratorPlugin = {
       maxItems: opts.captureConfig.maxItems,
       timeoutPerPageSec: opts.captureConfig.timeoutPerPageSec,
       executablePath: opts.captureConfig.executablePath,
+      extraCookies: opts.captureConfig.extraCookies,
     };
 
     let result: Awaited<ReturnType<typeof captureFrontend>>;

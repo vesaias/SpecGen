@@ -222,6 +222,7 @@ export const smartTreeGenerator: GeneratorPlugin = {
       model,
       temperature: ctx.aiOverrides?.temperature ?? 0.3,
       maxTokens: ctx.aiOverrides?.maxTokens ?? 4000,
+      signal: ctx.signal,
     });
     const durationMs = Date.now() - t0;
     const u = result.usage;

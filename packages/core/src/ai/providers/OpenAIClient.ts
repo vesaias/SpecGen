@@ -5,6 +5,10 @@ import type {
   AiCompletionInput,
   AiCompletionResult,
 } from "../AiClient.js";
+import { PermanentAiError } from "../AiRouter.js";
+
+/** Non-retryable HTTP status codes. See ClaudeApiClient for rationale. */
+const PERMANENT_STATUSES = new Set([400, 401, 403, 404, 422]);
 
 export interface OpenAIClientOptions {
   apiKey: string;
@@ -35,12 +39,15 @@ export class OpenAIClient implements AiClient {
       const prompt = input.cachedPrefix ? `${input.cachedPrefix}\n\n${input.prompt}` : input.prompt;
       messages.push({ role: "user", content: prompt });
 
-      const res = await this.sdk.chat.completions.create({
-        model: input.model,
-        max_tokens: input.maxTokens,
-        temperature: input.temperature,
-        messages,
-      });
+      const res = await this.sdk.chat.completions.create(
+        {
+          model: input.model,
+          max_tokens: input.maxTokens,
+          temperature: input.temperature,
+          messages,
+        },
+        { signal: input.signal },
+      );
       const text = res.choices[0]?.message?.content ?? "";
       const u = res.usage;
       return {
@@ -54,7 +61,12 @@ export class OpenAIClient implements AiClient {
         raw: res,
       };
     } catch (err) {
-      throw new Error(`${this.provider}: ${(err as Error).message}`);
+      const e = err as { status?: number; message?: string };
+      const message = `${this.provider}: ${e.message ?? String(err)}`;
+      if (typeof e.status === "number" && PERMANENT_STATUSES.has(e.status)) {
+        throw new PermanentAiError(message, { status: e.status, provider: this.provider });
+      }
+      throw new Error(message);
     }
   }
 }

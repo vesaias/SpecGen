@@ -58,6 +58,8 @@ describe("ClaudeApiClient", () => {
         temperature: 0.2,
         messages: [{ role: "user", content: "Describe X" }],
       }),
+      // Second arg carries request options (signal); accept any shape here.
+      expect.anything(),
     );
   });
 

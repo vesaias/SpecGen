@@ -179,6 +179,7 @@ export const projectBootstrapGenerator: GeneratorPlugin = {
         model,
         temperature,
         maxTokens: ctx.aiOverrides?.maxTokens ?? 1500,
+        signal: ctx.signal,
       });
       const durationMs = Date.now() - t0;
       const u = result.usage;

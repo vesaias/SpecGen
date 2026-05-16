@@ -25,6 +25,7 @@
 
 import PQueue from "p-queue";
 import { renderPrompt } from "../../ai/PromptRenderer.js";
+import { mergeAiEnrichment } from "../../ai/mergeAiEnrichment.js";
 import { canonicalItemType, schemaForItemType } from "../../ai/outputSchema.js";
 import { calcCost } from "../../ai/pricing.js";
 import { safeParseJson } from "../../ai/safeParseJson.js";
@@ -162,6 +163,13 @@ export const enrichItemsGenerator: GeneratorPlugin = {
     let runningCost = 0;
     let updated = 0;
 
+    // Circuit breaker: stop the AI loop after N consecutive provider failures
+    // so a broken auth / rate-limited provider doesn't burn through every
+    // captured item. Matches full-tree-spec.ts. Reset on each success.
+    const CIRCUIT_BREAK_THRESHOLD = 3;
+    let consecutiveFailures = 0;
+    let circuitOpen = false;
+
     const formatStatus = (
       n: number,
       itemId: string,
@@ -180,6 +188,17 @@ export const enrichItemsGenerator: GeneratorPlugin = {
 
     const tasks = candidates.map(({ id, item }) =>
       queue.add(async () => {
+        // Circuit breaker open — skip remaining queued tasks. The breaker
+        // is set on the catch path below; tasks already queued before it
+        // tripped see this flag here and short-circuit.
+        if (circuitOpen) {
+          aiCompleted++;
+          eventBuffer.push({
+            type: "progress",
+            message: formatStatus(aiCompleted, id, 0, 0, false, "skipped (circuit open)"),
+          });
+          return;
+        }
         const itemRec = item;
         const sourceFiles = Array.isArray(itemRec.sourceFiles)
           ? (itemRec.sourceFiles as string[])
@@ -209,6 +228,7 @@ export const enrichItemsGenerator: GeneratorPlugin = {
             model,
             temperature,
             maxTokens,
+            signal: ctx.signal,
           });
           usage = result.usage;
           const durationMs = Date.now() - t0;
@@ -272,9 +292,9 @@ export const enrichItemsGenerator: GeneratorPlugin = {
               eventBuffer.push({ type: "warning", message: msg });
               return;
             }
-            Object.assign(itemRec, validated.data as Record<string, unknown>);
+            mergeAiEnrichment(itemRec, validated.data as Record<string, unknown>);
           } else {
-            Object.assign(itemRec, parsed as Record<string, unknown>);
+            mergeAiEnrichment(itemRec, parsed as Record<string, unknown>);
           }
 
           // Mark the enrichment as fresh against current inputs. Drift gates
@@ -316,6 +336,7 @@ export const enrichItemsGenerator: GeneratorPlugin = {
             message: formatStatus(aiCompleted, id, durationMs, cost, true),
           });
           eventBuffer.push({ type: "item-updated", itemId: id });
+          consecutiveFailures = 0;
         } catch (err) {
           const durationMs = Date.now() - t0;
           aiCompleted++;
@@ -337,6 +358,15 @@ export const enrichItemsGenerator: GeneratorPlugin = {
             message: formatStatus(aiCompleted, id, durationMs, 0, false, errMsg.slice(0, 80)),
           });
           eventBuffer.push({ type: "warning", message: msg });
+
+          consecutiveFailures++;
+          if (consecutiveFailures >= CIRCUIT_BREAK_THRESHOLD && !circuitOpen) {
+            circuitOpen = true;
+            queue.clear();
+            const tripMsg = `AI circuit breaker tripped after ${CIRCUIT_BREAK_THRESHOLD} consecutive failures (last error: ${errMsg.slice(0, 200)}). Skipping remaining items.`;
+            eventBuffer.push({ type: "warning", message: tripMsg });
+            warnings.push(tripMsg);
+          }
         }
       }),
     );

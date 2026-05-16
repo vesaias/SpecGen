@@ -83,6 +83,8 @@ export async function captureFrontend(
     // other auth modes there's nothing to prime; per-item contexts apply the
     // auth fresh.
     let formAuthStorage: Awaited<ReturnType<BrowserContext["storageState"]>> | null = null;
+    let formAuthFailed = false;
+    let formAuthError = "";
     if (cfg.auth?.type === "form") {
       const primingCtx = await browser.newContext({
         viewport: { width: 1440, height: 900 },
@@ -92,12 +94,23 @@ export async function captureFrontend(
         await runFormLogin(page, cfg.auth, timeoutMs);
         formAuthStorage = await primingCtx.storageState();
       } catch (err) {
-        warnings.push(
-          `form login failed: ${(err as Error).message} — captures will run unauthenticated`,
-        );
+        formAuthFailed = true;
+        formAuthError = (err as Error).message;
       } finally {
         await primingCtx.close().catch(() => undefined);
       }
+    }
+
+    // If form-auth priming failed we ABORT the whole run rather than
+    // silently capture N pages anonymously. The previous behaviour produced
+    // 50 useless screenshots of login bounces and only a buried warning in
+    // the run log — much harder for the operator to diagnose than "the
+    // login form selector is wrong, fix it and re-run".
+    if (formAuthFailed) {
+      warnings.push(
+        `form login failed: ${formAuthError}. Aborting capture (set auth.type=none in Settings → Capture to capture anonymously, or fix the form selectors and retry).`,
+      );
+      return { results, warnings };
     }
 
     for (const item of itemsToCapture) {

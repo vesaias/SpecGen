@@ -50,6 +50,13 @@ export interface GeneratorContext {
    * full-tree-spec will use it to pass fs into parser calls.
    */
   fs?: ParserFileSystem;
+  /**
+   * AbortSignal fired by RunWorker when the user clicks Cancel on the run.
+   * Generators should pass this through to `ai.complete({ ..., signal })`
+   * so long-running AI calls actually interrupt instead of completing
+   * fully before the next yield observes the cancellation flag.
+   */
+  signal?: AbortSignal;
 }
 
 // ---------------------------------------------------------------------------

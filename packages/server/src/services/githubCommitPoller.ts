@@ -130,6 +130,8 @@ async function pollOne(project: Project, deps: GithubCommitPollerDeps): Promise<
 
   const octokit = new Octokit({ auth: tok.token });
   let latestSha: string;
+  let latestAuthorEmail: string | undefined;
+  let latestCommitterEmail: string | undefined;
   try {
     // /repos/{owner}/{repo}/commits?sha=<branch>&per_page=1 returns the latest
     // commit on the branch. Cheaper than fetching the full commits list.
@@ -147,12 +149,28 @@ async function pollOne(project: Project, deps: GithubCommitPollerDeps): Promise<
       return;
     }
     latestSha = head.sha;
+    latestAuthorEmail = head.commit?.author?.email ?? undefined;
+    latestCommitterEmail = head.commit?.committer?.email ?? undefined;
   } catch (err) {
     process.stderr.write(
       `[github-poller] ${project.slug}: GitHub API failed: ${(err as Error).message}\n`,
     );
     return;
   }
+
+  // Loop guard: if the latest commit was written BY SpecGen's own git-docs
+  // push (target branch == source ref + clone URL == source URL is a real
+  // user misconfiguration that creates an infinite poll → enrich → push →
+  // poll loop on a 24h cadence). Skip the trigger when the author or
+  // committer email matches the configured docs-push author. Default email
+  // is in services/gitDocsPush.ts (`specgen-bot@noreply.specgen.dev`); user
+  // overrides via `connectors.gitDocs.author.email`.
+  const gitDocsAuthorEmail =
+    (project.connectors as { gitDocs?: { author?: { email?: string } } })?.gitDocs?.author?.email ??
+    "specgen-bot@noreply.specgen.dev";
+  const commitFromSelf =
+    (latestAuthorEmail && latestAuthorEmail === gitDocsAuthorEmail) ||
+    (latestCommitterEmail && latestCommitterEmail === gitDocsAuthorEmail);
 
   const lastSeen = deps.projects.getGithubLastSeenSha(project.id);
 
@@ -170,6 +188,17 @@ async function pollOne(project: Project, deps: GithubCommitPollerDeps): Promise<
     // No change. (Refresh updated_at via the setter so the row's mtime tracks
     // poll activity, but skip the run.)
     deps.projects.setGithubLastSeenSha(project.id, latestSha);
+    return;
+  }
+
+  if (commitFromSelf) {
+    // Latest commit was authored by our own docs-push bot — record the sha
+    // (so the next tick treats it as the new baseline) but DON'T enqueue a
+    // re-run, otherwise auto-push would re-trigger this loop ad infinitum.
+    deps.projects.setGithubLastSeenSha(project.id, latestSha);
+    process.stdout.write(
+      `[github-poller] ${project.slug}: sha moved ${lastSeen.slice(0, 8)} → ${latestSha.slice(0, 8)} but authored by docs-push bot (${gitDocsAuthorEmail}); skipping to avoid self-trigger loop\n`,
+    );
     return;
   }
 

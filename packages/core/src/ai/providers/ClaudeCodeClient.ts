@@ -52,11 +52,28 @@ export class ClaudeCodeClient implements AiClient {
       let stdout = "";
       let stderr = "";
 
+      // Honour caller-supplied AbortSignal so user-initiated Cancel kills
+      // the in-flight CLI invocation rather than waiting for it to finish.
+      const onAbort = () => {
+        proc.kill("SIGTERM");
+        reject(new Error("claude_code: aborted"));
+      };
+      if (input.signal) {
+        if (input.signal.aborted) {
+          onAbort();
+          return;
+        }
+        input.signal.addEventListener("abort", onAbort, { once: true });
+      }
+
       proc.stdout?.on("data", (chunk) => {
         stdout += chunk.toString();
       });
       proc.stderr?.on("data", (chunk) => {
         stderr += chunk.toString();
+      });
+      proc.on("close", () => {
+        if (input.signal) input.signal.removeEventListener("abort", onAbort);
       });
       proc.on("error", (err) => {
         reject(new Error(`claude_code: failed to spawn '${this.binary}': ${err.message}`));

@@ -5,6 +5,13 @@ import type {
   AiCompletionInput,
   AiCompletionResult,
 } from "../AiClient.js";
+import { PermanentAiError } from "../AiRouter.js";
+
+/** HTTP status codes the router should NOT retry. 401/403 = bad/missing creds;
+ *  400 = bad request (typically content-policy or prompt-too-long); 404 = model
+ *  / endpoint not found; 422 = unprocessable entity. Everything else (5xx,
+ *  429, network) stays in the retry path. */
+const PERMANENT_STATUSES = new Set([400, 401, 403, 404, 422]);
 
 export interface ClaudeApiClientOptions {
   apiKey: string;
@@ -43,13 +50,16 @@ export class ClaudeApiClient implements AiClient {
           ]
         : input.prompt;
 
-      const res = await this.sdk.messages.create({
-        model: input.model,
-        max_tokens: input.maxTokens,
-        temperature: input.temperature,
-        system: input.system,
-        messages: [{ role: "user", content }],
-      });
+      const res = await this.sdk.messages.create(
+        {
+          model: input.model,
+          max_tokens: input.maxTokens,
+          temperature: input.temperature,
+          system: input.system,
+          messages: [{ role: "user", content }],
+        },
+        { signal: input.signal },
+      );
 
       const text = res.content
         .filter((b) => b.type === "text")
@@ -71,7 +81,12 @@ export class ClaudeApiClient implements AiClient {
         raw: res,
       };
     } catch (err) {
-      throw new Error(`claude_api: ${(err as Error).message}`);
+      const e = err as { status?: number; message?: string };
+      const message = `claude_api: ${e.message ?? String(err)}`;
+      if (typeof e.status === "number" && PERMANENT_STATUSES.has(e.status)) {
+        throw new PermanentAiError(message, { status: e.status, provider: "claude_api" });
+      }
+      throw new Error(message);
     }
   }
 }

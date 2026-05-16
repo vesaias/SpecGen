@@ -21,6 +21,14 @@ export interface AiCompletionInput {
   cachedPrefix?: string;
   /** Optional metadata for tracing / logging. */
   metadata?: Record<string, unknown>;
+  /**
+   * Optional AbortSignal — when fired, providers should abort the in-flight
+   * request as soon as possible. Plumbed by RunWorker so user-initiated
+   * `Cancel` actually interrupts long-running AI calls instead of waiting
+   * for the call to complete and only then checking the cancellation flag
+   * between generator yields.
+   */
+  signal?: AbortSignal;
 }
 
 export interface AiCompletionResult {

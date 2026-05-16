@@ -73,6 +73,14 @@ export interface RunCompletedEvent {
 export class RunWorker {
   private readonly queue: PQueue;
   private readonly cancellations = new Set<string>();
+  /**
+   * Per-run AbortControllers. The controller is created at executeRun start
+   * and aborted by `cancel()` when the user clicks Cancel on the dashboard.
+   * Threaded through GeneratorContext.signal → ai.complete({ signal }) so
+   * an in-flight AI request actually interrupts instead of waiting for the
+   * next generator yield (which can be minutes for a single long AI call).
+   */
+  private readonly runAborts = new Map<string, AbortController>();
   private readonly emitter = new EventEmitter();
 
   constructor(
@@ -122,6 +130,13 @@ export class RunWorker {
     if (r.status !== "queued" && r.status !== "running") return false;
 
     this.cancellations.add(runId);
+
+    // Fire the run's AbortController so any in-flight AI request observes
+    // the cancellation immediately. Without this the cancel button only
+    // takes effect at the next generator yield — which can be minutes
+    // while an AI call is in flight.
+    const ctrl = this.runAborts.get(runId);
+    if (ctrl) ctrl.abort();
 
     // Queued-but-not-started runs need an explicit status flip; executeRun's
     // pre-check returns without writing anything in that case.
@@ -196,6 +211,11 @@ export class RunWorker {
       const dataDir = getProjectDataDir(project);
       const spec = new JsonSpecRepository(dataDir);
 
+      // Per-run AbortController for user-initiated Cancel. Fired by
+      // RunWorker.cancel(); cleared in the outer finally.
+      const abortCtrl = new AbortController();
+      this.runAborts.set(runId, abortCtrl);
+
       const aiOverrides = {
         model: typeof projectAi.model === "string" ? projectAi.model : undefined,
         temperature: typeof projectAi.temperature === "number" ? projectAi.temperature : undefined,
@@ -227,6 +247,7 @@ export class RunWorker {
         guidelines: (projectAi.guidelines as string | undefined) ?? undefined,
         aiOverrides,
         options: mergedOptions,
+        signal: abortCtrl.signal,
       })) {
         if (this.cancellations.has(runId)) {
           this.deps.broker.emit(runId, {
@@ -296,6 +317,7 @@ export class RunWorker {
         options: input.options,
       });
     } finally {
+      this.runAborts.delete(runId);
       await this.deps.broker.close(runId);
     }
   }
